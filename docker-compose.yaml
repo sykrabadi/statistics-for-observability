@@ -1,0 +1,8 @@
+version: 3
+
+service:
+  api:
+  prometheus:
+  load_generator:
+  
+  grafana:
