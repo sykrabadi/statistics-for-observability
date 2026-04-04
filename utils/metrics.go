@@ -17,14 +17,14 @@ func NewMetrics(reg prometheus.Registerer) (*Metrics, error){
 				Name: "total_request",
 				Help: "http total requests",
 			},
-			[]string{"handler", "status_code"},
+			[]string{"method", "handler", "status_code"},
 		),
 		RequestLatency: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name: "request_latency",
 				Help: "http request latency in second",
 			},
-			[]string{"handler", "status_code"},
+			[]string{"method", "handler", "status_code"},
 		),
 	}
 

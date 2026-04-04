@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand/v2"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -23,28 +24,42 @@ func writeResponse(w http.ResponseWriter, statusCode int, message string) {
 
 func (s *Server) homeHandler(w http.ResponseWriter, r *http.Request) {
 	t := time.Now()
-	rn := rand.IntN(100)
-
 	// status code
-	sc := "200"
+	statusCode := http.StatusOK
 
 	// handler label
 	l := r.URL.Path
+	
+	// handler method
+	m := r.Method
 
-	// treat random number <= 30 as error
-	if rn <= 30 {
-		sc = "500"
-		s.Metrics.RequestTotal.WithLabelValues(l, sc).Inc()
-		s.Metrics.RequestLatency.WithLabelValues(l, sc).Observe(float64(time.Since(t)))
+	// random delay
+	maxRd := 800
+	minRd := 500
+	rd := rand.IntN(maxRd-minRd) + minRd
 
+	// tail latency: introduce 5% slowest request latency
+	if rand.IntN(100) < 5{
+		rd = 2000 + rand.IntN(1000)
+	}
+
+	time.Sleep(time.Millisecond * time.Duration(rd))
+
+	defer func() {
+		sc := strconv.Itoa(statusCode)
+		s.Metrics.RequestTotal.WithLabelValues(m, l, sc).Inc()
+		s.Metrics.RequestLatency.WithLabelValues(m, l, sc).Observe((time.Since(t)).Seconds())
+	}()
+
+	// treat random number <= 5 as error
+	if rand.IntN(100) <= 5 {
+		statusCode = http.StatusInternalServerError
 		log.Println("encounter error")
-		writeResponse(w, http.StatusInternalServerError, "encounter error")
+		writeResponse(w, statusCode, "encounter error")
 		return
 	}
 
-	s.Metrics.RequestTotal.WithLabelValues(l, sc).Inc()
-	s.Metrics.RequestLatency.WithLabelValues(l, sc).Observe(float64(time.Since(t)))
-
 	writeResponse(w, http.StatusOK, "ok")
+
 	return
 }
